@@ -36,17 +36,27 @@ services:
 
   kafka-connect:
     image: debezium/connect:latest
-    depends_on:
-      - kafka
-      - transactions-db
+    ports:
+      - "8083:8083"
     environment:
       BOOTSTRAP_SERVERS: kafka:9092
-      GROUP_ID: "debezium-connect"
+      GROUP_ID: "1"
       CONFIG_STORAGE_TOPIC: "connect-configs"
       OFFSET_STORAGE_TOPIC: "connect-offsets"
       STATUS_STORAGE_TOPIC: "connect-status"
-      CONNECT_KEY_CONVERTER: org.apache.kafka.connect.json.JsonConverter
-      CONNECT_VALUE_CONVERTER: org.apache.kafka.connect.json.JsonConverter
-      CONNECT_REST_ADVERTISED_HOST_NAME: kafka-connect
-    ports:
-      - "8083:8083"
+    depends_on:
+      - kafka
+      - transactions-db
+    volumes:
+      - ./connector_config.json:/tmp/connector_config.json
+    command: >
+      /bin/bash -c "
+        until curl -s http://localhost:8083/; do 
+          echo 'Waiting for Kafka Connect to be ready...'; 
+          sleep 5; 
+        done;
+        curl -X POST -H 'Content-Type: application/json' -d @/tmp/connector_config.json http://localhost:8083/connectors"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8083/connectors"]
+      interval: 30s
+      retries: 5
