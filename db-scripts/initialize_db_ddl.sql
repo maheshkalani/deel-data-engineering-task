@@ -1,4 +1,5 @@
 CREATE SCHEMA IF NOT EXISTS operations;
+CREATE SCHEMA IF NOT EXISTS analytics_db;
 
 CREATE TABLE IF NOT EXISTS operations.customers(
     customer_id      BIGSERIAL NOT NULL PRIMARY KEY,
@@ -56,8 +57,9 @@ alter table operations.order_items REPLICA IDENTITY FULL;
 
 -- Create CDC User
 
-CREATE ROLE cdc_replication REPLICATION LOGIN;
+CREATE ROLE cdc_replication with REPLICATION LOGIN;
 CREATE USER cdc_user WITH ROLE cdc_replication PASSWORD 'cdc_1234';
+ALTER ROLE cdc_user WITH REPLICATION;
 
 -- Create Replication Slot
 SELECT pg_create_logical_replication_slot('cdc_pgoutput', 'pgoutput');
